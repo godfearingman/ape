@@ -1,0 +1,38 @@
+/* main expression */
+expression ::= addition_subtraction
+
+/* addition or subtraction */
+addition_subtraction ::= multiplication_division (('+' | '-') multiplication_division)* 
+
+/* multiplication or division */ 
+multiplication_division ::= power (('*' | '/') power)* 
+
+/* power */
+power ::= functions ('^' functions)*
+
+/* functions */
+functions ::= (('sin' | 'cos' | 'tan') '(' expression ')') 
+  | (('asin' | 'acos' | 'atan') '(' expression ')') 
+  | (('sinh' | 'cosh' | 'tanh') '(' expression ')') 
+  | (expression '!') 
+  | ('log' '( expression (',' expression)?')') 
+  | 'abs' '(' expression ')' 
+  | 'sqrt' '(' expression ')' 
+  | 'exp' '(' expression ')'
+  | 'floor' '(' expression ')'
+  | 'ceil' '(' expression ')'
+  | 'round' '(' expression ')'
+  | expression '%' expression 
+  | primary
+
+/* primary */ 
+primary ::= number | '(' expression ')'
+
+/* number */
+number ::= unary_operator? digit+ ('.' digit+)? 
+
+/* unary operators */
+unary_operator ::= ('-' | '~')
+
+/* digit */
+digit ::= 0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | 'e' | 'pi'
