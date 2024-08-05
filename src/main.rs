@@ -4,7 +4,7 @@ pub mod ast;
 pub mod tokeniser;
 
 fn main() {
-    let tokens = Tokeniser::new("let x = 3\nlet y=2\nlet z = x\nz + y".to_string())
+    let tokens = Tokeniser::new("let x = 3\nlet y=2\nlet z = x\n~z + y".to_string())
         .to_tokens()
         .unwrap();
     let mut parser = Parser::new(tokens);

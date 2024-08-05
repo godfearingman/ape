@@ -269,52 +269,64 @@ impl Parser {
         }
         Ok(expr)
     }
-    /// Handle raw value
-    fn parse_primary(&mut self) -> Result<Expr, String> {
+    fn parse_get_or_set(&mut self) -> Option<Expr> {
         if let Some(Token {
             value: Some(ValueType::Identifier(id)),
             ..
         }) = self.peek()
         {
-            self.advance()?;
+            self.advance().ok()?;
 
             if let Some(Token {
                 operation: Some(Operations::VARASSIGN),
                 ..
             }) = self.peek()
             {
-                self.advance()?;
-                let expr = self.parse_addition_and_subtraction()?;
-                let final_expr = self.check_map_for_var(expr, id)?;
-                return Ok(final_expr);
+                self.advance().ok()?;
+                let expr = self.parse_addition_and_subtraction().ok()?;
+                let final_expr = self.check_map_for_var(expr, id).ok()?;
+                return Some(final_expr);
             } else {
-                return Ok(Expr::Variable(id));
+                return Some(Expr::Variable(id));
             }
         }
-
+        None
+    }
+    fn parse_assignment(&mut self) -> Result<Expr, String> {
+        self.advance()?;
+        let identifier = match self.advance()?.value {
+            Some(ValueType::Identifier(id)) => id,
+            _ => return Err(format!("Expected identifier after let @ {0}", self.cursor)),
+        };
+        self.expect(Operations::VARASSIGN)?;
+        let expr = self.parse_addition_and_subtraction()?;
+        Ok(Expr::Assignment(Box::new(expr), identifier))
+    }
+    fn parse_unary_minus(&mut self) -> Result<Expr, String> {
+        self.advance()?;
+        let parsed_exp = self.parse_primary()?;
+        Ok(Expr::UnaryOp(Box::new(parsed_exp), Operations::MINUS))
+    }
+    fn parse_unary_not(&mut self) -> Result<Expr, String> {
+        self.advance()?;
+        let parsed_exp = self.parse_primary()?;
+        Ok(Expr::UnaryOp(Box::new(parsed_exp), Operations::NOT))
+    }
+    /// Handle raw value
+    fn parse_primary(&mut self) -> Result<Expr, String> {
+        if let Some(expr) = self.parse_get_or_set() {
+            return Ok(expr);
+        }
         if let Some(tok) = self.peek() {
             match tok.operation {
                 Some(Operations::VARLET) => {
-                    self.advance()?;
-                    let identifier = match self.advance()?.value {
-                        Some(ValueType::Identifier(id)) => id,
-                        _ => {
-                            return Err(format!("Expected identifier after let @ {0}", self.cursor))
-                        }
-                    };
-                    self.expect(Operations::VARASSIGN)?;
-                    let expr = self.parse_addition_and_subtraction()?;
-                    return Ok(Expr::Assignment(Box::new(expr), identifier));
+                    return self.parse_assignment();
                 }
                 Some(Operations::MINUS) => {
-                    self.advance()?;
-                    let parsed_exp = self.parse_primary()?;
-                    return Ok(Expr::UnaryOp(Box::new(parsed_exp), Operations::MINUS));
+                    return self.parse_unary_minus();
                 }
                 Some(Operations::NOT) => {
-                    self.advance()?;
-                    let parsed_exp = self.parse_primary()?;
-                    return Ok(Expr::UnaryOp(Box::new(parsed_exp), Operations::NOT));
+                    return self.parse_unary_not();
                 }
                 _ => {}
             }
