@@ -1,5 +1,8 @@
 /* main expression */
-expression ::= addition_subtraction
+expression ::= assignment | addition_subtraction
+
+/* assignment */
+assignment ::= 'let' identifier '=' expression
 
 /* addition or subtraction */
 addition_subtraction ::= multiplication_division (('+' | '-') multiplication_division)* 
@@ -15,7 +18,7 @@ functions ::= (('sin' | 'cos' | 'tan') '(' expression ')')
   | (('asin' | 'acos' | 'atan') '(' expression ')') 
   | (('sinh' | 'cosh' | 'tanh') '(' expression ')') 
   | (expression '!') 
-  | ('log' '( expression (',' expression)?')') 
+  | ('log' '(' expression (',' expression)?')')
   | 'abs' '(' expression ')' 
   | 'sqrt' '(' expression ')' 
   | 'exp' '(' expression ')'
@@ -26,7 +29,7 @@ functions ::= (('sin' | 'cos' | 'tan') '(' expression ')')
   | primary
 
 /* primary */ 
-primary ::= number | '(' expression ')'
+primary ::= number | identifier | '(' expression ')'
 
 /* number */
 number ::= unary_operator? digit+ ('.' digit+)? 
@@ -35,4 +38,13 @@ number ::= unary_operator? digit+ ('.' digit+)?
 unary_operator ::= ('-' | '~')
 
 /* digit */
-digit ::= 0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | 'e' | 'pi'
+digit ::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
+
+/* identifier */
+identifier ::= letter (letter | digit)*
+
+/* letter */
+letter ::= 'a' | 'b' | ... | 'z'
+
+/* constants */
+constant ::= 'e' | 'pi'
