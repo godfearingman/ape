@@ -7,6 +7,7 @@ pub enum Expr {
     BinaryOp(Box<Expr>, Operations, Box<Expr>),
     UnaryOp(Box<Expr>, Operations),
     Assignment(Box<Expr>, String),
+    ScopeExp(Vec<Expr>),
 }
 
 pub fn factorial(n: f64) -> f64 {
