@@ -62,4 +62,45 @@ mod tests {
         "#;
         assert_eq!(parse_and_eval(input), 6.0);
     }
+    #[test]
+    #[should_panic(expected = "Missing ')'")]
+    fn test_unmatched_parentheses() {
+        parse_and_eval("(2 + 3");
+    }
+
+    #[test]
+    #[should_panic(expected = "Undeclared Variable: x")]
+    fn test_undeclared_variable() {
+        parse_and_eval("x + 5");
+    }
+
+    #[test]
+    #[should_panic(expected = "Invalid character")]
+    fn test_invalid_character() {
+        parse_and_eval("2 @ 3");
+    }
+
+    #[test]
+    #[should_panic(expected = "Expected identifier after let")]
+    fn test_invalid_let_statement() {
+        parse_and_eval("let 5 = 10");
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_division_by_zero() {
+        parse_and_eval("10 / 0");
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_invalid_function_call() {
+        parse_and_eval("notafunction(10)");
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_mismatched_scope_braces() {
+        parse_and_eval("{ let x = 5 } }");
+    }
 }

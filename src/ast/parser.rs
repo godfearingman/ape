@@ -41,7 +41,10 @@ impl Parser {
     pub fn eval(&mut self, expr: &Expr) -> f64 {
         match expr {
             Expr::Number(arb_val) => *arb_val,
-            Expr::Variable(id) => self.get_variable(id.to_string()).unwrap_or(f64::NAN),
+            Expr::Variable(id) => self
+                .get_variable(id.to_string())
+                .ok_or_else(|| panic!("Undeclared Variable: {0}", id))
+                .unwrap(),
             Expr::ScopeExp(exprs) => {
                 self.enter_scope();
                 let mut last_result = 0f64;
@@ -63,7 +66,12 @@ impl Parser {
                     Operations::ADD => left_val + right_val,
                     Operations::MINUS => left_val - right_val,
                     Operations::POWER => f64::powf(left_val, right_val),
-                    Operations::DIVIDE => left_val / right_val,
+                    Operations::DIVIDE => {
+                        if right_val == 0f64 {
+                            panic!("Division by zero")
+                        }
+                        left_val / right_val
+                    }
                     Operations::MULTIPLY => left_val * right_val,
                     Operations::FNLOG => left_val.ln() / right_val.ln(),
                     Operations::FNMOD => left_val % right_val,
@@ -374,11 +382,9 @@ impl Parser {
         match curr_token.operation {
             Some(Operations::LPAREN) => {
                 let parsed_exp = self.parse_addition_and_subtraction()?;
-                let next_tok = self.advance()?;
-                match next_tok.operation {
-                    Some(Operations::RPAREN) => Ok(parsed_exp),
-                    _ => return Err(format!("Missing ')' @ {0}", self.cursor)),
-                }
+                self.expect(Operations::RPAREN)
+                    .map_err(|_| format!("Missing ')' @ {0}", self.cursor))?;
+                Ok(parsed_exp)
             }
             _ => match curr_token.value {
                 Some(ValueType::Number(val)) => Ok(Expr::Number(val)),

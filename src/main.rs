@@ -1,10 +1,10 @@
 use crate::ast::parser::Parser;
 use crate::tokeniser::tokeniser::Tokeniser;
 pub mod ast;
-pub mod tests;
+pub mod tokeniser;
 
 #[cfg(test)]
-pub mod tokeniser;
+pub mod tests;
 
 fn main() {
     let input = r#"
