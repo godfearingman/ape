@@ -1,6 +1,6 @@
 use crate::tokeniser::token_enum::Operations;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expr {
     Number(f64),
     Variable(String),
@@ -8,6 +8,8 @@ pub enum Expr {
     UnaryOp(Box<Expr>, Operations),
     Assignment(Box<Expr>, String),
     ScopeExp(Vec<Expr>),
+    Function(String, Vec<String>, Box<Expr>),
+    FunctionCall(String, Vec<Box<Expr>>),
 }
 
 pub fn factorial(n: f64) -> f64 {
