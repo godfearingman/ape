@@ -62,6 +62,8 @@ pub enum Operations {
     RBRACE,
     // }
     LBRACE,
+    // fn
+    FNDEFINE,
 }
 #[derive(Debug, Clone)]
 pub enum ValueType {
