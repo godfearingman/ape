@@ -13,6 +13,7 @@ pub struct Parser {
     cursor: usize,
     line: i16,
     scopes: Vec<HashMap<String, f64>>,
+    fmap: HashMap<String, (Vec<String>, Box<Expr>)>,
 }
 
 impl Parser {
@@ -23,6 +24,7 @@ impl Parser {
             cursor: 0usize,
             line: 1i16,
             scopes: vec![HashMap::new()],
+            fmap: HashMap::new(),
         }
     }
     /// Evaluate arg 'expr' which is going to be the AST tree representation
@@ -41,6 +43,28 @@ impl Parser {
     pub fn eval(&mut self, expr: &Expr) -> f64 {
         match expr {
             Expr::Number(arb_val) => *arb_val,
+            Expr::Function(fn_name, params, exprs) => {
+                self.fmap
+                    .insert(fn_name.clone(), (params.clone(), exprs.clone()));
+                0.0
+            }
+            Expr::FunctionCall(name, params) => {
+                if let Some((param_names, body)) = self.fmap.get(name).cloned() {
+                    if param_names.len() != params.len() {
+                        panic!("Function {0} called with wrong # of params", name)
+                    }
+                    self.enter_scope();
+                    for (param_name, param_exp) in param_names.iter().zip(params.iter()) {
+                        let exp = self.eval(param_exp);
+                        self.set_variable(param_name.to_string(), exp);
+                    }
+                    let res = self.eval(&body);
+                    self.exit_scope();
+                    res
+                } else {
+                    panic!("Undefined Function: {0}", name)
+                }
+            }
             Expr::Variable(id) => self
                 .get_variable(id.to_string())
                 .ok_or_else(|| panic!("Undeclared Variable: {0}", id))
@@ -308,7 +332,6 @@ impl Parser {
         }) = self.peek()
         {
             self.advance().ok()?;
-
             if let Some(Token {
                 operation: Some(Operations::VARASSIGN),
                 ..
@@ -355,9 +378,82 @@ impl Parser {
         let parsed_exp = self.parse_primary()?;
         Ok(Expr::UnaryOp(Box::new(parsed_exp), Operations::NOT))
     }
+    fn parse_custom_function(&mut self) -> Result<Expr, String> {
+        self.advance()?;
+        //fn id (param) { body }
+        let fn_name = match self.advance()?.value {
+            Some(ValueType::Identifier(id)) => id,
+            _ => return Err(format!("Expected function name @ {0}", self.cursor)),
+        };
+        self.expect(Operations::LPAREN)?;
+        let mut param_vec = Vec::new();
+        while let Some(tok) = self.peek() {
+            if tok.operation == Some(Operations::RPAREN) {
+                self.advance()?;
+                break;
+            }
+
+            match tok.value {
+                Some(ValueType::Identifier(param)) => {
+                    param_vec.push(param);
+                    self.advance()?;
+                    if self
+                        .peek()
+                        .map_or(false, |t| t.operation == Some(Operations::COMMA))
+                    {
+                        self.advance()?;
+                    }
+                }
+                _ => {
+                    return Err(format!(
+                        "Expected alphanumeric parameter @ {0}",
+                        self.cursor
+                    ))
+                }
+            }
+        }
+        let fn_body = self.parse_scope()?;
+        Ok(Expr::Function(fn_name, param_vec, Box::new(fn_body)))
+    }
+    fn parse_custom_function_call(&mut self, id: String) -> Result<Expr, String> {
+        //(param)
+        self.advance()?;
+        let mut param_vec = Vec::new();
+        while let Some(tok) = self.peek() {
+            if tok.operation == Some(Operations::RPAREN) {
+                self.advance()?;
+                break;
+            }
+
+            param_vec.push(Box::new(self.parse_addition_and_subtraction()?));
+            if let Some(Token {
+                operation: Some(Operations::COMMA),
+                ..
+            }) = self.peek()
+            {
+                self.advance()?;
+            }
+        }
+
+        Ok(Expr::FunctionCall(id, param_vec))
+    }
     /// Handle raw value
     fn parse_primary(&mut self) -> Result<Expr, String> {
+        if let Some(tok) = self.peek() {
+            match tok.operation {
+                Some(Operations::FNDEFINE) => return self.parse_custom_function(),
+                _ => {}
+            }
+        }
         if let Some(expr) = self.parse_get_or_set() {
+            if let Expr::Variable(ref fn_name) = expr {
+                if self
+                    .peek()
+                    .map_or(false, |tok| tok.operation == Some(Operations::LPAREN))
+                {
+                    return self.parse_custom_function_call(fn_name.to_string());
+                }
+            }
             return Ok(expr);
         }
         if let Some(tok) = self.peek() {
