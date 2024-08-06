@@ -1,5 +1,11 @@
 /* main expression */
-expression ::= assignment | addition_subtraction
+expression ::= function_definition | scope | assignment | addition_subtraction
+
+/* function definition */
+function_definition ::= 'fn' identifier '(' parameter_list ')' scope
+
+/* scope */
+scope ::= '{' expression* '}'
 
 /* assignment */
 assignment ::= 'let' identifier '=' expression
@@ -11,40 +17,49 @@ addition_subtraction ::= multiplication_division (('+' | '-') multiplication_div
 multiplication_division ::= power (('*' | '/') power)* 
 
 /* power */
-power ::= functions ('^' functions)*
-
-/* functions */
-functions ::= (('sin' | 'cos' | 'tan') '(' expression ')') 
-  | (('asin' | 'acos' | 'atan') '(' expression ')') 
-  | (('sinh' | 'cosh' | 'tanh') '(' expression ')') 
-  | (expression '!') 
-  | ('log' '(' expression (',' expression)?')')
-  | 'abs' '(' expression ')' 
-  | 'sqrt' '(' expression ')' 
-  | 'exp' '(' expression ')'
-  | 'floor' '(' expression ')'
-  | 'ceil' '(' expression ')'
-  | 'round' '(' expression ')'
-  | expression '%' expression 
-  | primary
-
-/* primary */ 
-primary ::= number | identifier | '(' expression ')'
-
-/* number */
-number ::= unary_operator? digit+ ('.' digit+)? 
+power ::= unary ('^' unary)*
 
 /* unary operators */
-unary_operator ::= ('-' | '~')
+unary ::= ('-' | '~')? function_call
+
+/* function call */
+function_call ::= primary ('(' argument_list ')')?
+
+/* primary */ 
+primary ::= number | identifier | '(' expression ')' | function
+
+/* functions */
+function ::= (trig_function | other_function) '(' expression ')'
+
+/* trigonometric functions */
+trig_function ::= 'sin' | 'cos' | 'tan' | 'asin' | 'acos' | 'atan' | 'sinh' | 'cosh' | 'tanh'
+
+/* other functions */
+other_function ::= 'log' | 'abs' | 'sqrt' | 'exp' | 'floor' | 'ceil' | 'round'
+
+/* number */
+number ::= digit+ ('.' digit+)?
+
+/* identifier */
+identifier ::= lowercase_letter (lowercase_letter | digit)*
+
+/* parameter list */
+parameter_list ::= (identifier (',' identifier)*)?
+
+/* argument list */
+argument_list ::= (expression (',' expression)*)?
 
 /* digit */
 digit ::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
 
-/* identifier */
-identifier ::= letter (letter | digit)*
-
-/* letter */
-letter ::= 'a' | 'b' | ... | 'z'
+/* lowercase letter */
+lowercase_letter ::= 'a' | 'b' | ... | 'z'
 
 /* constants */
 constant ::= 'e' | 'pi'
+
+/* modulo operation */
+modulo ::= expression '%' expression
+
+/* factorial */
+factorial ::= expression '!'

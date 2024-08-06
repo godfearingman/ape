@@ -1,11 +1,10 @@
 # Project Idea
-This project is a learning journey, for myself, in order to create my own compiler alongside my own code generation. So far the journey has been to learn how to do all stages of compilation. 
+This project is a learning journey, for myself, in order to create my own compiler alongside my own code generation. So far the journey has been to learn how to do all stages of compilation. This will be predominantly written in rust and I will continue to update the repo with new commits regarding anything new I learn.
 - Lexical analysis
 - Syntax analysis 
 - Semantic analysis
 - Optimisation
 - Code generation 
-This will be predominantly written in rust and I will continue to update the repo with new commits regarding anything new I learn.
 
 ## Features
 - Tokenisation for a high majority of mathematical expressions 
@@ -15,7 +14,8 @@ This will be predominantly written in rust and I will continue to update the rep
 - Support for a handful of mathematical functions 
 - Variable (re)assignment & invocation 
 - Mathematical constants 
-- Unary oprators 
+- Unary oprators
+- Functions (including parameters)
 
 ## Project Structure
 
@@ -30,12 +30,22 @@ The project currently consists of three main components which are split into the
 The expression language follows this simplified EBNF grammar:
 
 ```ebnf
-expression ::= assignment | addition_subtraction
+expression ::= function_definition | scope | assignment | addition_subtraction
+function_definition ::= 'fn' identifier '(' parameter_list ')' scope
+scope ::= '{' expression* '}'
 assignment ::= 'let' identifier '=' expression
 addition_subtraction ::= multiplication_division (('+' | '-') multiplication_division)* 
 multiplication_division ::= power (('*' | '/') power)* 
-power ::= functions ('^' functions)*
-functions ::= [various function definitions]
-primary ::= number | identifier | '(' expression ')'
-number ::= unary_operator? digit+ ('.' digit+)? 
-identifier ::= lowercase_letter (lowercase_letter)*
+power ::= unary ('^' unary)*
+unary ::= ('-' | '~')? function_call
+function_call ::= primary ('(' argument_list ')')?
+primary ::= number | identifier | '(' expression ')' | function
+function ::= (trig_function | other_function) '(' expression ')'
+trig_function ::= 'sin' | 'cos' | 'tan' | 'asin' | 'acos' | 'atan' | 'sinh' | 'cosh' | 'tanh'
+other_function ::= 'log' | 'abs' | 'sqrt' | 'exp' | 'floor' | 'ceil' | 'round'
+number ::= digit+ ('.' digit+)?
+identifier ::= lowercase_letter (lowercase_letter | digit)*
+parameter_list ::= (identifier (',' identifier)*)?
+argument_list ::= (expression (',' expression)*)?
+lowercase_letter ::= 'a' | 'b' | ... | 'z'
+digit ::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
