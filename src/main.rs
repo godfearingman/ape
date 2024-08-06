@@ -8,15 +8,10 @@ pub mod tests;
 
 fn main() {
     let input = r#"
-        let x = 1
-        {
-            let y = 2
-            let z = {
-                let x = 3
-                x + y
-            }
-            z + x
+        fn test(x, y) {
+            x + y
         }
+        test(5,2) + test(5,2)
         "#;
     let tokens = Tokeniser::new(input.to_string()).to_tokens().unwrap();
     let mut parser = Parser::new(tokens);
