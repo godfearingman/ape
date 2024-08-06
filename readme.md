@@ -38,4 +38,4 @@ power ::= functions ('^' functions)*
 functions ::= [various function definitions]
 primary ::= number | identifier | '(' expression ')'
 number ::= unary_operator? digit+ ('.' digit+)? 
-identifier ::= lowercase_letter (lowercase_letter | digit)*
+identifier ::= lowercase_letter (lowercase_letter)*
