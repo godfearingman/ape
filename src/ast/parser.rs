@@ -12,7 +12,7 @@ pub struct Parser {
     tokens: TokenStream,
     cursor: usize,
     line: i16,
-    varmap: HashMap<String, f64>,
+    scopes: Vec<HashMap<String, f64>>,
 }
 
 impl Parser {
@@ -22,7 +22,7 @@ impl Parser {
             tokens: inp_tokens,
             cursor: 0usize,
             line: 1i16,
-            varmap: HashMap::<String, f64>::new(),
+            scopes: vec![HashMap::new()],
         }
     }
     /// Evaluate arg 'expr' which is going to be the AST tree representation
@@ -41,10 +41,19 @@ impl Parser {
     pub fn eval(&mut self, expr: &Expr) -> f64 {
         match expr {
             Expr::Number(arb_val) => *arb_val,
-            Expr::Variable(id) => self.varmap.get(id).copied().unwrap_or(f64::NAN),
+            Expr::Variable(id) => self.get_variable(id.to_string()).unwrap_or(f64::NAN),
+            Expr::ScopeExp(exprs) => {
+                self.enter_scope();
+                let mut last_result = 0f64;
+                for expr in exprs {
+                    last_result = self.eval(expr);
+                }
+                self.exit_scope();
+                last_result
+            }
             Expr::Assignment(expr, id) => {
                 let val = self.eval(expr);
-                self.varmap.insert(id.to_string(), val);
+                self.set_variable(id.to_string(), val);
                 0.0
             }
             Expr::BinaryOp(left, op, right) => {
@@ -113,6 +122,27 @@ impl Parser {
 
         Ok(tok)
     }
+    fn enter_scope(&mut self) {
+        self.scopes.push(HashMap::new());
+    }
+    fn exit_scope(&mut self) {
+        if self.scopes.len() > 1 {
+            self.scopes.pop();
+        }
+    }
+    fn get_variable(&self, id: String) -> Option<f64> {
+        for scope in self.scopes.iter().rev() {
+            if let Some(&val) = scope.get(&id) {
+                return Some(val);
+            }
+        }
+        None
+    }
+    fn set_variable(&mut self, id: String, value: f64) {
+        if let Some(scope) = self.scopes.last_mut() {
+            scope.insert(id, value);
+        }
+    }
     /// Peek into current cursor element without consuming data
     fn peek(&mut self) -> Option<Token> {
         self.tokens.get(self.cursor).cloned()
@@ -127,6 +157,7 @@ impl Parser {
     }
     pub fn parse_tokens(&mut self) -> Result<Expr, String> {
         let start_line = self.line;
+
         let expr = self.parse_addition_and_subtraction()?;
 
         if let Some(tok) = self.peek() {
@@ -135,13 +166,6 @@ impl Parser {
             }
         }
         Ok(expr)
-    }
-    fn check_map_for_var(&self, expr: Expr, id: String) -> Result<Expr, String> {
-        if self.varmap.contains_key(&id) {
-            Ok(Expr::Assignment(Box::new(expr), id))
-        } else {
-            Err(format!("Variable {0} is not declared", id))
-        }
     }
     /// Handle addition & subtraction
     fn parse_addition_and_subtraction(&mut self) -> Result<Expr, String> {
@@ -284,13 +308,24 @@ impl Parser {
             {
                 self.advance().ok()?;
                 let expr = self.parse_addition_and_subtraction().ok()?;
-                let final_expr = self.check_map_for_var(expr, id).ok()?;
-                return Some(final_expr);
+                return Some(Expr::Assignment(Box::new(expr), id));
             } else {
                 return Some(Expr::Variable(id));
             }
         }
         None
+    }
+    fn parse_scope(&mut self) -> Result<Expr, String> {
+        self.expect(Operations::LBRACE)?;
+        let mut exprs = Vec::new();
+        while self
+            .peek()
+            .map_or(false, |tok| tok.operation != Some(Operations::RBRACE))
+        {
+            exprs.push(self.parse_tokens()?);
+        }
+        self.expect(Operations::RBRACE)?;
+        Ok(Expr::ScopeExp(exprs))
     }
     fn parse_assignment(&mut self) -> Result<Expr, String> {
         self.advance()?;
@@ -319,6 +354,9 @@ impl Parser {
         }
         if let Some(tok) = self.peek() {
             match tok.operation {
+                Some(Operations::LBRACE) => {
+                    return self.parse_scope();
+                }
                 Some(Operations::VARLET) => {
                     return self.parse_assignment();
                 }
