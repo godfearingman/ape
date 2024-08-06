@@ -58,6 +58,10 @@ pub enum Operations {
     VARLET,
     // =
     VARASSIGN,
+    // {
+    RBRACE,
+    // }
+    LBRACE,
 }
 #[derive(Debug, Clone)]
 pub enum ValueType {

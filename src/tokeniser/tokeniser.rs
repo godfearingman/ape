@@ -160,6 +160,22 @@ impl Tokeniser {
                         inp_chars.next();
                     }
                 }
+                '{' => {
+                    return_stream.push(Token {
+                        operation: Some(Operations::LBRACE),
+                        value: None,
+                        line_number: self.line_number,
+                    });
+                    inp_chars.next();
+                }
+                '}' => {
+                    return_stream.push(Token {
+                        operation: Some(Operations::RBRACE),
+                        value: None,
+                        line_number: self.line_number,
+                    });
+                    inp_chars.next();
+                }
                 '=' => {
                     return_stream.push(Token {
                         operation: Some(Operations::VARASSIGN),
