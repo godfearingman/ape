@@ -1,12 +1,24 @@
 use crate::ast::parser::Parser;
 use crate::tokeniser::tokeniser::Tokeniser;
 pub mod ast;
+pub mod tests;
+
+#[cfg(test)]
 pub mod tokeniser;
 
 fn main() {
-    let tokens = Tokeniser::new("let x = 3\nlet y=2\nlet z = x\n~z + y".to_string())
-        .to_tokens()
-        .unwrap();
+    let input = r#"
+        let x = 1
+        {
+            let y = 2
+            let z = {
+                let x = 3
+                x + y
+            }
+            z + x
+        }
+        "#;
+    let tokens = Tokeniser::new(input.to_string()).to_tokens().unwrap();
     let mut parser = Parser::new(tokens);
     let expressions = parser.parse_lines().unwrap();
     let evaluated_result = parser.evaluate(&expressions);
