@@ -42,6 +42,7 @@ impl Tokeniser {
             (String::from("ceil"), Operations::FNCEIL),
             (String::from("round"), Operations::FNROUND),
             (String::from("let"), Operations::VARLET),
+            (String::from("fn"), Operations::FNDEFINE),
         ]
         .iter()
         .cloned()
